@@ -21,7 +21,7 @@ angular.module('ui.scroll', []).directive('ngScrollViewport', [
 				]
 			};
 		}
-	]).directive('ngScroll', [
+	]).directive('ngScrollX', [
 		'$log', '$injector', '$rootScope', '$timeout', function(console, $injector, $rootScope, $timeout) {
 			return {
 				require: ['?^ngScrollViewport'],
@@ -121,6 +121,31 @@ angular.module('ui.scroll', []).directive('ngScrollViewport', [
 							};
 						});
 						viewport = adapter.viewport;
+						
+						var viewportScope = viewport.scope() || $rootScope;
+						if (angular.isDefined($attr.topVisible)) {
+							function topVisibleItem (item) {
+								viewportScope[$attr.topVisible] = item
+							}
+						}
+						if (angular.isDefined($attr.topVisibleElement)) {
+							function topVisibleElement (element) {
+								viewportScope[$attr.topVisibleElement] = element
+							}
+						}
+						if (angular.isDefined($attr.topVisibleScope)) {
+							function topVisibleScope (scope) {
+								viewportScope[$attr.topVisibleScope] = scope
+							}
+						}
+						
+						function topVisible(item) {
+							topVisibleItem && topVisibleItem(item.scope[itemName]);
+							topVisibleElement && topVisibleElement(item.element);
+							topVisibleScope && topVisibleScope(item.scope);
+						}
+						
+						
 						first = 1;
 						next = 1;
 						buffer = [];
@@ -270,6 +295,17 @@ angular.module('ui.scroll', []).directive('ngScrollViewport', [
 								}
 								if (finalize) {
 									return finalize();
+								}
+								if (pending.length == 0) {
+									var topHeight = 0;
+									for (index in buffer) {
+										var item = buffer[index];
+										var itemHeight = item.element.outerHeight(true);
+										if (adapter.topDataPos() + topHeight + itemHeight >= topVisiblePos()) {
+											topVisible(item);
+											break;
+										}
+									}
 								}
 							};
 							if (newItems) {
