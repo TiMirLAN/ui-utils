@@ -11,7 +11,7 @@
  element.scrollTop(value)
  */
 
-angular.module('ui.scroll', []).directive('ngScrollViewport', [
+angular.module('ui.scrollx', []).directive('ngScrollViewport', [
 		'$log', function() {
 			return {
 				controller: [
@@ -21,8 +21,8 @@ angular.module('ui.scroll', []).directive('ngScrollViewport', [
 				]
 			};
 		}
-	]).directive('ngScrollX', [
-		'$log', '$injector', '$rootScope', '$timeout', function(console, $injector, $rootScope, $timeout) {
+	]).directive('ngScroll', [
+		'$injector', '$rootScope', '$timeout', function($injector, $rootScope, $timeout) {
 			return {
 				require: ['?^ngScrollViewport'],
 				transclude: 'element',
@@ -124,17 +124,17 @@ angular.module('ui.scroll', []).directive('ngScrollViewport', [
 						
 						var viewportScope = viewport.scope() || $rootScope;
 						if (angular.isDefined($attr.topVisible)) {
-							function topVisibleItem (item) {
+							var topVisibleItem = function (item) {
 								viewportScope[$attr.topVisible] = item
 							}
 						}
 						if (angular.isDefined($attr.topVisibleElement)) {
-							function topVisibleElement (element) {
+							var topVisibleElement = function (element) {
 								viewportScope[$attr.topVisibleElement] = element
 							}
 						}
 						if (angular.isDefined($attr.topVisibleScope)) {
-							function topVisibleScope (scope) {
+							var topVisibleScope = function (scope) {
 								viewportScope[$attr.topVisibleScope] = scope
 							}
 						}
@@ -200,7 +200,6 @@ angular.module('ui.scroll', []).directive('ngScrollViewport', [
 								adapter.bottomPadding(adapter.bottomPadding() + bottomHeight);
 								removeFromBuffer(buffer.length - overage, buffer.length);
 								next -= overage;
-								return console.log('clipped off bottom ' + overage + ' bottom padding ' + (adapter.bottomPadding()));
 							}
 						};
 						shouldLoadTop = function() {
@@ -225,7 +224,6 @@ angular.module('ui.scroll', []).directive('ngScrollViewport', [
 								adapter.topPadding(adapter.topPadding() + topHeight);
 								removeFromBuffer(0, overage);
 								first += overage;
-								return console.log('clipped off top ' + overage + ' top padding ' + (adapter.topPadding()));
 							}
 						};
 						enqueueFetch = function(direction, scrolling) {
@@ -285,7 +283,6 @@ angular.module('ui.scroll', []).directive('ngScrollViewport', [
 						adjustBuffer = function(scrolling, newItems, finalize) {
 							var doAdjustment;
 							doAdjustment = function() {
-								console.log('top {actual=' + (adapter.topDataPos()) + ' visible from=' + (topVisiblePos()) + ' bottom {visible through=' + (bottomVisiblePos()) + ' actual=' + (adapter.bottomDataPos()) + '}');
 								if (shouldLoadBottom()) {
 									enqueueFetch(true, scrolling);
 								} else {
@@ -298,13 +295,15 @@ angular.module('ui.scroll', []).directive('ngScrollViewport', [
 								}
 								if (pending.length == 0) {
 									var topHeight = 0;
-									for (index in buffer) {
+									for (var index in buffer) {
 										var item = buffer[index];
 										var itemHeight = item.element.outerHeight(true);
 										if (adapter.topDataPos() + topHeight + itemHeight >= topVisiblePos()) {
 											topVisible(item);
 											break;
-										}
+										} else {
+                                            topHeight += itemHeight;
+                                        }
 									}
 								}
 							};
@@ -345,14 +344,12 @@ angular.module('ui.scroll', []).directive('ngScrollViewport', [
 										if (result.length === 0) {
 											eof = true;
 											adapter.bottomPadding(0);
-											console.log('appended: requested ' + bufferSize + ' records starting from ' + next + ' recieved: eof');
 										} else {
 											clipTop();
 											for (_i = 0, _len = result.length; _i < _len; _i++) {
 												item = result[_i];
 												newItems.push(insert(++next, item));
 											}
-											console.log('appended: requested ' + bufferSize + ' received ' + result.length + ' buffer size ' + buffer.length + ' first ' + first + ' next ' + next);
 										}
 										return finalize(scrolling, newItems);
 									});
@@ -367,13 +364,11 @@ angular.module('ui.scroll', []).directive('ngScrollViewport', [
 										if (result.length === 0) {
 											bof = true;
 											adapter.topPadding(0);
-											console.log('prepended: requested ' + bufferSize + ' records starting from ' + (first - bufferSize) + ' recieved: bof');
 										} else {
 											clipBottom();
 											for (i = _i = _ref = result.length - 1; _ref <= 0 ? _i <= 0 : _i >= 0; i = _ref <= 0 ? ++_i : --_i) {
 												newItems.unshift(insert(--first, result[i]));
 											}
-											console.log('prepended: requested ' + bufferSize + ' received ' + result.length + ' buffer size ' + buffer.length + ' first ' + first + ' next ' + next);
 										}
 										return finalize(scrolling, newItems);
 									});
